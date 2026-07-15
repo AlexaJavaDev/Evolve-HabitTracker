@@ -8,7 +8,7 @@
 Проект написан на **Java Spring Boot** с использованием **Thymeleaf** и **Bootstrap**, и развёрнут локально через **H2 Database**.
 
 Приложение развёрнуто на Render:  
-[https://evolve-habit.onrender.com](https://evolve-habit.onrender.com)
+https://evolve-habittracker.onrender.com
 
 ---
 
