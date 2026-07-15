@@ -1,12 +1,11 @@
 package com.evolve.Evolve.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
 
 import java.time.LocalDate;
 
 @Entity
-@Data
+
 public class Log {
 
     @Id
@@ -26,4 +25,16 @@ public class Log {
         this.done = done;
         this.habit = habit;
     }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public LocalDate getDate() { return date; }
+    public void setDate(LocalDate date) { this.date = date; }
+
+    public boolean isDone() { return done; }
+    public void setDone(boolean done) { this.done = done; }
+
+    public Habit getHabit() { return habit; }
+    public void setHabit(Habit habit) { this.habit = habit; }
 }
