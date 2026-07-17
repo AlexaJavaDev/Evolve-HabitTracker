@@ -9,12 +9,14 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Controller
 @RequestMapping("/habits")
 public class HabitController {
 
+    // ======================== БЛОК 1: ПОЛЯ И КОНСТАНТЫ ========================
     private final HabitRepository habitRepository;
     private final LogRepository logRepository;
 
@@ -28,33 +30,52 @@ public class HabitController {
         this.logRepository = logRepository;
     }
 
+    // ======================== БЛОК 2: ГЛАВНАЯ СТРАНИЦА (список привычек) ========================
     @GetMapping
     public String listHabits(Model model) {
         List<Habit> habits = habitRepository.findAll();
-        Map<Long, Integer> progressMap = new HashMap<>();
-        Map<Long, List<String>> daysMap = new HashMap<>();
         LocalDate today = LocalDate.now();
 
+        // 2.1 Форматированная дата для приветствия
+        String formattedDate = today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", new Locale("ru")));
+        model.addAttribute("formattedDate", formattedDate);
+
+        // 2.2 Счётчики выполненных привычек сегодня
+        int totalToday = habits.size();
+        int doneToday = 0;
+        for (Habit h : habits) {
+            int progress = calculateProgress(h, h.getDuration());
+            if (progress == 100) doneToday++;
+        }
+        model.addAttribute("totalToday", totalToday);
+        model.addAttribute("doneToday", doneToday);
+
+        // 2.3 Прогресс и календарь для каждой привычки
+        Map<Long, Integer> progressMap = new HashMap<>();
+        Map<Long, List<String>> daysMap = new HashMap<>();
         for (Habit h : habits) {
             int duration = h.getDuration();
-            progressMap.put(h.getId(), calculateProgress(h, duration));
             List<String> days = new ArrayList<>();
             for (int i = 0; i < duration; i++) {
                 LocalDate date = today.minusDays(i);
                 boolean done = logRepository.findByHabitAndDate(h, date)
                         .map(Log::isDone).orElse(false);
-                days.add(done ? h.getColor() : "#f0f0f0"); // цвет или серый
+                days.add(done ? h.getColor() : "#f0f0f0");
             }
             daysMap.put(h.getId(), days);
+            progressMap.put(h.getId(), calculateProgress(h, duration));
         }
 
+        model.addAttribute("logsMap", new HashMap<>());
         model.addAttribute("habits", habits);
-        model.addAttribute("progressMap", progressMap);
         model.addAttribute("daysMap", daysMap);
+        model.addAttribute("progressMap", progressMap);
         model.addAttribute("today", today);
+
         return "habits";
     }
 
+    // ======================== БЛОК 3: БЫСТРОЕ ДОБАВЛЕНИЕ ========================
     @GetMapping("/quick-add")
     public String showQuickAdd(Model model) {
         model.addAttribute("quickHabits", QUICK_HABITS);
@@ -74,6 +95,7 @@ public class HabitController {
         return "redirect:/habits";
     }
 
+    // ======================== БЛОК 4: ДОБАВЛЕНИЕ СВОЕЙ ПРИВЫЧКИ ========================
     @GetMapping("/add")
     public String showAddForm(Model model) {
         Habit habit = new Habit();
@@ -98,12 +120,14 @@ public class HabitController {
         return "redirect:/habits";
     }
 
+    // ======================== БЛОК 5: УДАЛЕНИЕ ========================
     @PostMapping("/delete/{id}")
     public String deleteHabit(@PathVariable Long id) {
         habitRepository.deleteById(id);
         return "redirect:/habits";
     }
 
+    // ======================== БЛОК 6: ОТМЕТКА ВЫПОЛНЕНИЯ ========================
     @GetMapping("/toggle/{id}")
     public String toggleHabit(@PathVariable Long id, @RequestParam String date) {
         Habit habit = habitRepository.findById(id)
@@ -116,6 +140,7 @@ public class HabitController {
         return "redirect:/habits";
     }
 
+    // ======================== БЛОК 7: ВСПОМОГАТЕЛЬНЫЙ МЕТОД (прогресс) ========================
     private int calculateProgress(Habit habit, int totalDays) {
         LocalDate today = LocalDate.now();
         int doneDays = 0;

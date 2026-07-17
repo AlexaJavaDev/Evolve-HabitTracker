@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Evolve — трекер привычек</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- ============ БЛОК 1: СТИЛИ ============ -->
     <style>
         body {
             background: #f5f7fa;
@@ -25,10 +26,9 @@
         }
     </style>
 </head>
-
 <body>
 
-<!-- ======== 1. Верхняя панель (логотип) ======== -->
+<!-- ============ БЛОК 2: НАВИГАЦИЯ (верхняя панель) ============ -->
 <nav class="navbar navbar-expand-lg">
     <div class="container">
         <a class="navbar-brand" href="/">🌱 Evolve</a>
@@ -38,54 +38,67 @@
     </div>
 </nav>
 
-<!-- ======== 2. Контент ======== -->
+<!-- ============ БЛОК 3: КОНТЕНТ ============ -->
 <div class="container mt-4">
 
-    <!-- 2.1 Заголовок страницы "Список привычек" -->
+    <!-- 3.1 Заголовок страницы -->
     <div class="page-header d-flex justify-content-between align-items-center">
         <h2 class="fw-light mb-0">Список привычек</h2>
         <span class="badge bg-light text-dark"
               th:text="${habits != null ? habits.size() : 0} + ' привычек'">0 привычек</span>
     </div>
 
-    <!-- Кнопки быстрого добавления -->
+    <!-- 3.2 Кнопки быстрого добавления -->
     <div class="mb-3 mt-2">
         <a href="/habits/quick-add" class="btn btn-primary rounded-pill px-4">⚡ Быстро добавить</a>
         <a href="/habits/add" class="btn btn-outline-secondary rounded-pill px-4">➕ Своя привычка</a>
     </div>
 
-    <!-- 2.2 Прогресс дня (приветствие + полоска) -->
+    <!-- 3.3 Приветствие и прогресс дня -->
     <div class="row mt-4 align-items-center">
         <div class="col">
-            <h5 class="mb-0">Доброе утро</h5>
-            <small class="text-muted">Сегодня выполнено <strong>0</strong> из <strong>0</strong>
-                привычек</small>
+            <h5 class="mb-0" th:text="${formattedDate}">Доброе утро</h5>
+            <small class="text-muted">
+                Сегодня выполнено <strong th:text="${doneToday}">0</strong> из <strong th:text="${totalToday}">0</strong> привычек
+            </small>
         </div>
         <div class="col-auto" style="min-width: 160px;">
             <div class="progress" style="height: 8px; border-radius: 20px;">
-                <div class="progress-bar" style="width: 0%; background: #aa96da; border-radius: 20px;">
-                </div>
+                <div class="progress-bar" style="width: 0%; background: #aa96da; border-radius: 20px;"></div>
             </div>
         </div>
     </div>
 
     <hr>
 
-    <!-- 2.3 Список привычек -->
+    <!-- 3.4 Список привычек (карточки) -->
     <div th:if="${habits != null && !habits.isEmpty()}">
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             <div class="col" th:each="habit : ${habits}">
                 <div class="card h-100 shadow-sm" style="border-left: 8px solid" th:style="'border-left-color: ' + (habit.color ?: '#aa96da')">
                     <div class="card-body d-flex flex-column">
+
+                        <!-- 3.4.1 Название и описание -->
                         <h5 class="card-title" th:text="${habit.name}">Название</h5>
                         <p class="card-text text-muted small" th:text="${habit.description}">Описание</p>
+
+                        <!-- 3.4.2 Статус выполнения сегодня -->
+                        <div th:if="${progressMap != null && progressMap.get(habit.id) == 100}"
+                             class="badge bg-success mb-2 w-100 text-center">
+                            ✅ Выполнено
+                        </div>
+
+                        <!-- 3.4.3 Частота и кнопка удаления -->
                         <div class="mt-auto d-flex justify-content-between align-items-center">
                             <span class="badge bg-light text-dark" th:text="${habit.frequency}">Ежедневно</span>
-                            <form method="post" th:action="@{/habits/delete/{id}(id=${habit.id})}">
+                            <form method="post" th:action="@{/habits/delete/{id}(id=${habit.id})}"
+                                  th:data-name="${habit.name}"
+                                  onsubmit="return confirm('Удалить привычку «' + this.dataset.name + '»?')">
                                 <button type="submit" class="btn btn-outline-danger btn-sm">🗑️ Удалить</button>
                             </form>
                         </div>
-                        <!-- Прогресс-бар -->
+
+                        <!-- 3.4.4 Прогресс-бар -->
                         <div class="mt-2">
                             <div class="d-flex justify-content-between small text-muted">
                                 <span>Прогресс</span>
@@ -100,28 +113,32 @@
                             </div>
                         </div>
 
-                        <!-- Мини-календарь -->
+                        <!-- 3.4.5 Мини-календарь -->
                         <div class="mt-2">
-                            <div class="d-flex flex-wrap gap-1">
-                                <div th:each="day, iter : ${daysMap.get(habit.id)}">
-                                    <div class="day-square"
-                                         th:style="'background-color: ' + ${day} + '; width: 14px; height: 14px; border-radius: 3px; border: 1px solid #ddd; cursor: pointer;'"
-                                         th:data-date="${today.minusDays(iter.index)}"
-                                         th:data-habit-id="${habit.id}"
-                                         th:title="'День ' + ${iter.index + 1}">
-                                        <span style="font-size: 6px; color: #666;" th:text="${iter.index + 1}"></span>
+                            <div th:with="habitDays=${daysMap.get(habit.id)}">
+                                <div th:if="${habitDays != null}" class="d-flex flex-wrap gap-1">
+                                    <div th:each="day, iter : ${habitDays}">
+                                        <div class="day-square"
+                                             th:style="'background-color: ' + ${day} + '; width: 14px; height: 14px; border-radius: 3px; border: 1px solid #ddd; cursor: pointer;'"
+                                             th:data-date="${today.minusDays(iter.index)}"
+                                             th:data-habit-id="${habit.id}"
+                                             th:title="'День ' + ${iter.index + 1}">
+                                            <span style="font-size: 6px; color: #666;" th:text="${iter.index + 1}"></span>
+                                        </div>
                                     </div>
                                 </div>
+                                <div th:if="${habitDays == null}" class="text-muted small">Нет данных</div>
                             </div>
                         </div>
                         <!-- Конец календаря -->
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Заглушка, если привычек нет -->
+    <!-- 3.5 Заглушка, если привычек нет -->
     <div th:if="${habits == null || habits.isEmpty()}" class="text-center py-5">
         <div style="font-size: 48px;">🌱</div>
         <h4>Пока нет привычек</h4>
@@ -129,11 +146,12 @@
         <a href="/habits/add" class="btn btn-primary rounded-pill px-4">➕ Добавить привычку</a>
     </div>
 </div>
+<!-- ============ КОНЕЦ БЛОКА 3 ============ -->
 
-<!-- Bootstrap JS (для бургера) -->
+<!-- ============ БЛОК 4: ПОДКЛЮЧЕНИЕ JS ============ -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- ======== Footer ======== -->
+<!-- ============ БЛОК 5: FOOTER ============ -->
 <footer class="footer mt-5 py-3 bg-light border-top">
     <div class="container text-center">
         <span class="text-muted">© 2026 Evolve | Трекер привычек на Spring Boot &amp; Thymeleaf
@@ -145,15 +163,17 @@
     </div>
 </footer>
 
-<!-- JavaScript для отметки привычек -->
+<!-- ============ БЛОК 6: СКРИПТ ДЛЯ КВАДРАТИКОВ ============ -->
 <script>
-    document.querySelectorAll('.day-square').forEach(square => {
-    square.addEventListener('click', function() {
-        const habitId = this.dataset.habitId;
-        const date = this.dataset.date;
-        window.location.href = '/habits/toggle/' + habitId + '?date=' + date;
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.day-square').forEach(square => {
+            square.addEventListener('click', function() {
+                const habitId = this.dataset.habitId;
+                const date = this.dataset.date;
+                window.location.href = '/habits/toggle/' + habitId + '?date=' + date;
+            });
+        });
     });
-});
 </script>
 
 </body>
