@@ -28,6 +28,9 @@ public class Habit {
     @Column(length = 20)
     private String frequency;
 
+    @Column(nullable = false)
+    private int duration = 7;
+
     @OneToMany(mappedBy = "habit", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Log> logs = new ArrayList<>();
 
@@ -62,4 +65,7 @@ public class Habit {
 
     public List<Log> getLogs() { return logs; }
     public void setLogs(List<Log> logs) { this.logs = logs; }
+
+    public int getDuration() { return duration; }
+    public void setDuration(int duration) { this.duration = duration; }
 }
